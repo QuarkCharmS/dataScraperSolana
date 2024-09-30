@@ -1,0 +1,40 @@
+{
+  "name": "spl-price-in-sol",
+  "version": "1.0.1",
+  "description": "Simple one file typescript module to obtain pool id and calculate the token price in SOL utilizing Raydium SDK, with given token address only.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "npx ts-node src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "versedpro",
+  "license": "ISC",
+  "dependencies": {
+    "@project-serum/pool": "^0.2.3",
+    "@project-serum/serum": "^0.13.65",
+    "@raydium-io/raydium-sdk": "^1.3.1-beta.46",
+    "@solana/spl-token": "^0.3.10",
+    "@solana/web3.js": "^1.88.0",
+    "axios": "^1.6.5",
+    "bn.js": "^5.2.1",
+    "bs58": "^5.0.0",
+    "moralis": "^2.23.2"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/versedpro/fetch-raydium-pool.git"
+  },
+  "keywords": [
+    "Raydium",
+    "SPL",
+    "Price",
+    "Pool"
+  ]
+}
