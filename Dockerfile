@@ -28,8 +28,9 @@ WORKDIR /app
 
 COPY ./main.py /app
 COPY ./requirements.txt /app
-COPY ./getPrice/ /app
-COPY ./getLiquidityFromMint/ /app
+COPY ./getPrice/ /app/getPrice
+COPY ./getLiquidityFromMint/ /app/getLiquidityFromMint
+COPY ./logs /app/logs
 
 EXPOSE 6789
 
