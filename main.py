@@ -1,4 +1,5 @@
 from time import sleep
+from pathlib import Path
 from websocket_server import WebsocketServer
 import signal
 import asyncio
@@ -178,7 +179,7 @@ async def process_token(token, time_to_wait_in_seconds=60, counter=0, max_retrie
 
     print(json.dumps(dictionary_token, indent=2))
 
-    await async_append_to_json_file('data.json', dictionary_token)
+    await async_append_to_json_file('./logs/data.json', dictionary_token)
 
 async def async_append_to_json_file(file_path, new_data, retries=5, backoff_factor=1.0):
     attempt = 0
@@ -219,6 +220,14 @@ async def async_append_to_json_file(file_path, new_data, retries=5, backoff_fact
 signal.signal(signal.SIGINT, exit_gracefully)
 
 #asyncio.run(process_token('7Gspm8KMkF7GauN4EWVgvMoAZ4zNSTU29AC96rUjpump'))
+
+
+file_path = Path('./logs/data.json')
+
+if not file_path.exists():
+    file_path.touch()
+    with open('./logs/data.json', 'w') as file:
+        file.write('[]')
 
 
 PORT = 6789

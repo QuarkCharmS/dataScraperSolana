@@ -5,11 +5,13 @@ import path from 'path';
 import { Connection } from '@solana/web3.js';
 import WebSocket from 'ws';
 
+const socketAddress = process.env.SOCKET_ADDRESS || 'localhost';
+
 
 let sendFetchedTokens : boolean = false;
 
 const dataPath = path.join(__dirname, 'new_solana_tokens.json');
-const socket = new WebSocket('ws://localhost:6789');
+const socket = new WebSocket(`ws://${socketAddress}:6789`);
 
 function handleSocketTriggers(message: string): void{
   if (message === 'Stop.'){

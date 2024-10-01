@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: token_scraper_frontend:latest
+    container_name: frontend
+    ports:
+      - "6789:6789"
+
+
+  backend:
+    image: token_scraper_backend:latest
+    container_name: backend
+    depends_on:
+      - frontend
+    environment:
+      - SOCKET_ADDRESS=frontend
