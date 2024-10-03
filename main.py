@@ -219,7 +219,7 @@ async def async_append_to_json_file(file_path, new_data, retries=5, backoff_fact
 
 signal.signal(signal.SIGINT, exit_gracefully)
 
-#asyncio.run(process_token('7Gspm8KMkF7GauN4EWVgvMoAZ4zNSTU29AC96rUjpump'))
+asyncio.run(process_token('7Gspm8KMkF7GauN4EWVgvMoAZ4zNSTU29AC96rUjpump'))
 
 
 file_path = Path('./logs/data.json')
