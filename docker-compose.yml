@@ -1,3 +1,4 @@
+---
 version: '3.8'
 
 services:
@@ -7,7 +8,7 @@ services:
     ports:
       - "6789:6789"
     volumes:
-      - logs:/app/logs
+      - ./logs:/app/logs
 
 
   backend:
@@ -17,13 +18,4 @@ services:
       - frontend
     environment:
       - SOCKET_ADDRESS=frontend
-    ports:
-      - "6789:6789"
-
-volumes:
-  logs:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /etc/token-scraper/token-scraper-logs
+...
