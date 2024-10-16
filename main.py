@@ -1,50 +1,49 @@
+import os
 from time import sleep
 from pathlib import Path
 from websocket_server import WebsocketServer
 import signal
 import asyncio
 import json
-import os
 import aiofiles
 from asyncio import sleep
 
-
 clients = []
+
+def debug_print(message):
+    if os.getenv("DEBUG", "false").lower() == "true":
+        print(message)
 
 def new_client(client, server):
     """
-
     Websocket function that handles whenever new clients join the session.
     Called for every client with which a handshake is performed.
     """
-    print(f"New client connected and was given id {client['id']}")
+    debug_print(f"New client connected and was given id {client['id']}")
     clients.append(client)
     server.send_message_to_all(msg='Start.')
-    #server.send_message_to_all("Hey all, a new client has joined us")
+
 
 def client_left(client, server):
     """
-
     Function called for every client disconnecting from the session.
     """
-    print(f"Client({client['id']}) disconnected")
+    debug_print(f"Client({client['id']}) disconnected")
+
 
 async def process_price(price):
     """
-
     :param price: full price http response from http request
     :return: price in float
     """
-    #price = price.stdout
-    print(f'price : {price}')
+    debug_print(f'price : {price}')
 
     try:
         price = float(price.split('\n')[1].split(' ')[1])
         return price
     except:
-        print("Couldn't process price")
+        debug_print("Couldn't process price")
         return -1.0
-
 
 def exit_gracefully(something, something2):
     server.send_message_to_all(msg='Stop Completely.')
@@ -76,9 +75,8 @@ async def get_tokens_in_LP(data_LP):
         return float(lp_reserve_value_str)
     except ValueError as e:
         # Handle any conversion errors
-        print(f"An error occurred: {e}")
+        debug_print(f"An error occurred: {e}")
         return None
-
 
 async def calculate_total_value(token, curr_price):
     proc = await asyncio.create_subprocess_shell(
@@ -91,20 +89,20 @@ async def calculate_total_value(token, curr_price):
     dataLP = stdout.decode('utf-8')
     tokens_in_LP = await get_tokens_in_LP(dataLP)
 
-    print('tokensLP curr_price')
-    print(tokens_in_LP, curr_price)
+    debug_print('tokensLP curr_price')
+    debug_print(f"{tokens_in_LP}, {curr_price}")
 
     try:
         return tokens_in_LP * curr_price
     except ValueError as e:
-        print(f"An error ocurred: {e}")
+        debug_print(f"An error occurred: {e}")
         return None
 
 async def process_token(token, time_to_wait_in_seconds=60, counter=0, max_retries=3):
-    print(f'{token} fetched! Processing price!')
+    debug_print(f'{token} fetched! Processing price!')
 
     if token == 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v':
-        print('Function receives correctly')
+        debug_print('Function receives correctly')
         return
 
     dictionary_prices={}
@@ -129,21 +127,20 @@ async def process_token(token, time_to_wait_in_seconds=60, counter=0, max_retrie
     try:
         if proc.returncode != 0:
             raise RuntimeError
-        #// Tries to process the initial price
+        # Tries to process the initial price
         initial_price = await process_price(initial_price)
         dictionary_token['initial_price_LP'] = await calculate_total_value(token, initial_price)
         await sleep(3)
         if initial_price == -1.0:
             raise ValueError
 
-    except ValueError:  #// In case that ValueError is received, it means that the price is still not the defined
-        #// as the expected answer if the price is not defined should be 'Unable to fetch price.'
-        print(f"Price or LP quantity for {token} not available yet... Trying again...")
+    except ValueError:  # In case that ValueError is received, it means that the price is still not the defined
+        debug_print(f"Price or LP quantity for {token} not available yet... Trying again...")
         await sleep(3)
-        #// Waits 5 seconds before trying to fetch price again.
+        # Waits 5 seconds before trying to fetch price again.
         if counter == max_retries:
-            #// If the maximum number of retries is reached, it stops trying and returns.
-            print("Max retries reached.")
+            # If the maximum number of retries is reached, it stops trying and returns.
+            debug_print("Max retries reached.")
             return
         await process_token(token, time_to_wait_in_seconds=time_to_wait_in_seconds, counter=counter + 1,
                       max_retries=max_retries)
@@ -179,7 +176,7 @@ async def process_token(token, time_to_wait_in_seconds=60, counter=0, max_retrie
     dictionary_token['final_price'] = await calculate_total_value(token, price)
     dictionary_token['prices'] = dictionary_prices
 
-    print(json.dumps(dictionary_token, indent=2))
+    debug_print(json.dumps(dictionary_token, indent=2))
 
     await async_append_to_json_file('./logs/data.json', dictionary_token)
 
@@ -198,7 +195,7 @@ async def async_append_to_json_file(file_path, new_data, retries=5, backoff_fact
                     content = await file.read()
                     data = json.loads(content) if content else []
                 except json.JSONDecodeError:
-                    print("Couldn't append to file, creating a new one")
+                    debug_print("Couldn't append to file, creating a new one")
                     data = []  # In case the file content is corrupt or improperly formatted
 
             # Append new data to the existing list
@@ -213,17 +210,15 @@ async def async_append_to_json_file(file_path, new_data, retries=5, backoff_fact
             attempt += 1
             if attempt < retries:
                 wait_time = backoff_factor * (2 ** attempt)
-                print(f"Attempt {attempt}: Unable to access file, retrying in {wait_time} seconds...")
+                debug_print(f"Attempt {attempt}: Unable to access file, retrying in {wait_time} seconds...")
                 await sleep(wait_time)
             else:
-                print("Maximum retries reached. Failed to write to file.")
+                debug_print("Maximum retries reached. Failed to write to file.")
                 raise e
-
 
 signal.signal(signal.SIGINT, exit_gracefully)
 
 asyncio.run(process_token('7Gspm8KMkF7GauN4EWVgvMoAZ4zNSTU29AC96rUjpump'))
-
 
 file_path = Path('./logs/data.json')
 
@@ -232,7 +227,6 @@ if not file_path.exists():
     with open('./logs/data.json', 'w') as file:
         file.write('[]')
 
-
 PORT = 6789
 HOST = ""
 server = WebsocketServer(HOST, PORT)
@@ -240,3 +234,4 @@ server.set_fn_new_client(new_client)
 server.set_fn_client_left(client_left)
 server.set_fn_message_received(new_message)
 server.run_forever()
+
