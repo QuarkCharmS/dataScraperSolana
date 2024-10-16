@@ -42,6 +42,7 @@ async def process_price(price):
         price = float(price.split('\n')[1].split(' ')[1])
         return price
     except:
+        print("Couldn't process price")
         return -1.0
 
 
@@ -95,7 +96,8 @@ async def calculate_total_value(token, curr_price):
 
     try:
         return tokens_in_LP * curr_price
-    except:
+    except ValueError as e:
+        print(f"An error ocurred: {e}")
         return None
 
 async def process_token(token, time_to_wait_in_seconds=60, counter=0, max_retries=3):
@@ -196,6 +198,7 @@ async def async_append_to_json_file(file_path, new_data, retries=5, backoff_fact
                     content = await file.read()
                     data = json.loads(content) if content else []
                 except json.JSONDecodeError:
+                    print("Couldn't append to file, creating a new one")
                     data = []  # In case the file content is corrupt or improperly formatted
 
             # Append new data to the existing list
