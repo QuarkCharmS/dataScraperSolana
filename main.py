@@ -19,37 +19,37 @@ def new_client(client, server):
     Websocket function that handles whenever new clients join the session.
     Called for every client with which a handshake is performed.
     """
-    debug_print(f"New client connected and was given id {client['id']}")
+    debug_print(f"New client connected with ID: {client['id']}")
     clients.append(client)
     server.send_message_to_all(msg='Start.')
-
 
 def client_left(client, server):
     """
     Function called for every client disconnecting from the session.
     """
-    debug_print(f"Client({client['id']}) disconnected")
-
+    debug_print(f"Client with ID: {client['id']} has disconnected")
 
 async def process_price(price):
     """
     :param price: full price http response from http request
     :return: price in float
     """
-    debug_print(f'price : {price}')
+    debug_print(f"Processing price response: {price}")
 
     try:
         price = float(price.split('\n')[1].split(' ')[1])
         return price
     except:
-        debug_print("Couldn't process price")
+        debug_print("Failed to process price from response. Returning default value -1.0")
         return -1.0
 
 def exit_gracefully(something, something2):
+    debug_print("SIGINT received. Shutting down server gracefully.")
     server.send_message_to_all(msg='Stop Completely.')
     exit(0)
 
 def new_message(client, server, token):
+    debug_print(f"Received new message from client ID: {client['id']}, Token: {token}")
     asyncio.run(process_token(token))
 
 async def get_tokens_in_LP(data_LP):
@@ -59,7 +59,7 @@ async def get_tokens_in_LP(data_LP):
         start_index = data_LP.find(marker)
 
         if start_index == -1:
-            # Return None if "lpReserve" is not found
+            debug_print("'lpReserve' key not found in the liquidity pool data.")
             return None
 
         # Adjust start_index to the start of the numeric value
@@ -74,11 +74,11 @@ async def get_tokens_in_LP(data_LP):
         lp_reserve_value_str = data_LP[start_index:end_index].strip()
         return float(lp_reserve_value_str)
     except ValueError as e:
-        # Handle any conversion errors
-        debug_print(f"An error occurred: {e}")
+        debug_print(f"Error occurred while parsing lpReserve value: {e}")
         return None
 
 async def calculate_total_value(token, curr_price):
+    debug_print(f"Calculating total value for token: {token} with current price: {curr_price}")
     proc = await asyncio.create_subprocess_shell(
         f"node get-pools-by-token.js {token}",
         cwd='./getLiquidityFromMint',
@@ -89,24 +89,23 @@ async def calculate_total_value(token, curr_price):
     dataLP = stdout.decode('utf-8')
     tokens_in_LP = await get_tokens_in_LP(dataLP)
 
-    debug_print('tokensLP curr_price')
-    debug_print(f"{tokens_in_LP}, {curr_price}")
+    debug_print(f"Liquidity pool tokens: {tokens_in_LP}, Current price: {curr_price}")
 
     try:
         return tokens_in_LP * curr_price
     except ValueError as e:
-        debug_print(f"An error occurred: {e}")
+        debug_print(f"Error occurred while calculating total value: {e}")
         return None
 
 async def process_token(token, time_to_wait_in_seconds=60, counter=0, max_retries=3):
-    debug_print(f'{token} fetched! Processing price!')
+    debug_print(f"Processing token: {token}")
 
     if token == 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v':
-        debug_print('Function receives correctly')
+        debug_print("Received the expected token. Exiting process.")
         return
 
-    dictionary_prices={}
-    dictionary_token={}
+    dictionary_prices = {}
+    dictionary_token = {}
 
     dictionary_token['mint'] = token
 
@@ -134,24 +133,24 @@ async def process_token(token, time_to_wait_in_seconds=60, counter=0, max_retrie
         if initial_price == -1.0:
             raise ValueError
 
-    except ValueError:  # In case that ValueError is received, it means that the price is still not the defined
-        debug_print(f"Price or LP quantity for {token} not available yet... Trying again...")
+    except ValueError:
+        debug_print(f"Unable to fetch price or liquidity pool quantity for token: {token}. Retrying...")
         await sleep(3)
-        # Waits 5 seconds before trying to fetch price again.
         if counter == max_retries:
-            # If the maximum number of retries is reached, it stops trying and returns.
-            debug_print("Max retries reached.")
+            debug_print("Max retries reached for token: {token}. Exiting process.")
             return
         await process_token(token, time_to_wait_in_seconds=time_to_wait_in_seconds, counter=counter + 1,
                       max_retries=max_retries)
         return
     except RuntimeError:
+        debug_print(f"Runtime error occurred while processing token: {token}. Exiting process.")
         return
 
     dictionary_prices[0.0] = initial_price
 
     price = 0.0
     while True:
+        debug_print(f"Fetching current price for token: {token}")
 
         proc = await asyncio.create_subprocess_shell(
             f"npx tsx fetchPrices.ts {token}",
@@ -170,13 +169,15 @@ async def process_token(token, time_to_wait_in_seconds=60, counter=0, max_retrie
         time_passed = current_time - start_time
         dictionary_prices[time_passed] = price
 
+        debug_print(f"Time passed: {time_passed}s, Current price: {price}")
+
         if time_passed >= time_to_wait_in_seconds:
             break
 
     dictionary_token['final_price'] = await calculate_total_value(token, price)
     dictionary_token['prices'] = dictionary_prices
 
-    debug_print(json.dumps(dictionary_token, indent=2))
+    debug_print(f"Final token data for {token}: {json.dumps(dictionary_token, indent=2)}")
 
     await async_append_to_json_file('./logs/data.json', dictionary_token)
 
@@ -186,6 +187,7 @@ async def async_append_to_json_file(file_path, new_data, retries=5, backoff_fact
         try:
             # Check if the file exists and has content; if not, initialize with an empty list
             if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+                debug_print(f"File {file_path} does not exist or is empty. Initializing with an empty list.")
                 async with aiofiles.open(file_path, 'w') as file:
                     await file.write(json.dumps([]))  # Initialize file with an empty list
 
@@ -195,7 +197,7 @@ async def async_append_to_json_file(file_path, new_data, retries=5, backoff_fact
                     content = await file.read()
                     data = json.loads(content) if content else []
                 except json.JSONDecodeError:
-                    debug_print("Couldn't append to file, creating a new one")
+                    debug_print(f"File {file_path} is corrupt or improperly formatted. Reinitializing.")
                     data = []  # In case the file content is corrupt or improperly formatted
 
             # Append new data to the existing list
@@ -205,30 +207,34 @@ async def async_append_to_json_file(file_path, new_data, retries=5, backoff_fact
             async with aiofiles.open(file_path, 'w') as file:
                 await file.write(json.dumps(data, indent=4))  # Pretty print for better readability
 
+            debug_print(f"Successfully appended new data to {file_path}")
             break  # Break the loop on success
         except OSError as e:
             attempt += 1
             if attempt < retries:
                 wait_time = backoff_factor * (2 ** attempt)
-                debug_print(f"Attempt {attempt}: Unable to access file, retrying in {wait_time} seconds...")
+                debug_print(f"Attempt {attempt}: Unable to access {file_path}. Retrying in {wait_time} seconds...")
                 await sleep(wait_time)
             else:
-                debug_print("Maximum retries reached. Failed to write to file.")
+                debug_print(f"Maximum retries reached. Failed to write to {file_path}")
                 raise e
 
 signal.signal(signal.SIGINT, exit_gracefully)
 
+debug_print("Starting token processing...")
 asyncio.run(process_token('7Gspm8KMkF7GauN4EWVgvMoAZ4zNSTU29AC96rUjpump'))
 
 file_path = Path('./logs/data.json')
 
 if not file_path.exists():
+    debug_print(f"Creating log file at {file_path}")
     file_path.touch()
     with open('./logs/data.json', 'w') as file:
         file.write('[]')
 
 PORT = 6789
 HOST = ""
+debug_print(f"Starting WebSocket server on {HOST}:{PORT}")
 server = WebsocketServer(HOST, PORT)
 server.set_fn_new_client(new_client)
 server.set_fn_client_left(client_left)

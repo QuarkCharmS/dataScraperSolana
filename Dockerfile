@@ -1,27 +1,3 @@
-# Use a base image
-# FROM <base_image>
-
-# Set working directory
-# WORKDIR /path/to/your/app
-
-# Copy local files to the container
-# COPY . /path/to/your/app
-
-# Install dependencies (if needed)
-# RUN <install_command>
-
-# Expose the application port (if needed)
-# EXPOSE <port_number>
-
-# Define environment variables (if needed)
-# ENV <key>=<value>
-
-# Run your application
-# CMD ["executable", "arg1", "arg2"]
-
-# Or for an entrypoint
-# ENTRYPOINT ["executable", "arg1", "arg2"]
-
 FROM python:3.10
 
 WORKDIR /app
@@ -55,4 +31,3 @@ RUN cd getPrice && npm install --legacy-peer-deps
 RUN cd getLiquidityFromMint && npm install --legacy-peer-deps
 
 CMD ["python", "main.py"]
-
