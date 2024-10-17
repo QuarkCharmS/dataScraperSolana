@@ -1,4 +1,5 @@
-FROM python:3.10
+# Stage 1: Python environment setup
+FROM python:3.10 AS python-base
 
 WORKDIR /app
 
@@ -8,26 +9,39 @@ COPY ./getPrice/ /app/getPrice
 COPY ./getLiquidityFromMint/ /app/getLiquidityFromMint
 COPY ./logs /app/logs
 
+# Install Python dependencies and verify installation
+RUN pip install -r requirements.txt && \
+    pip freeze && \
+    rm -rf /root/.cache/pip
+
+# Stage 2: Node.js environment setup
+FROM node:20 AS node-base
+
+WORKDIR /app
+
+# Copy the application files
+COPY --from=python-base /app /app
+
+# Install npm dependencies for getPrice and getLiquidityFromMint
+WORKDIR /app/getPrice
+RUN npm install --legacy-peer-deps
+
+WORKDIR /app/getLiquidityFromMint
+RUN npm install --legacy-peer-deps
+
+# Stage 3: Final stage combining both environments
+FROM python:3.10
+
+WORKDIR /app
+
+# Copy everything from the previous stages
+COPY --from=python-base /app /app
+COPY --from=node-base /app/getPrice /app/getPrice
+COPY --from=node-base /app/getLiquidityFromMint /app/getLiquidityFromMint
+
+# Expose the port
 EXPOSE 6789
 
-RUN pip install -r requirements.txt && \
-    pip cache purge && \
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash && \
-    export NVM_DIR="$HOME/.nvm" && \
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
-    nvm install 20 && \
-    nvm use 20 && \
-    node -v && \
-    npm -v && \
-    npm cache clean --force && \
-    rm -rf /root/.cache/pip && \
-    rm -rf $NVM_DIR/.cache && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install npm dependencies in getPrice
-RUN cd getPrice && npm install --legacy-peer-deps
-
-# Install npm dependencies in getLiquidityFromMint
-RUN cd getLiquidityFromMint && npm install --legacy-peer-deps
-
+# Run the main Python script
 CMD ["python", "main.py"]
+
