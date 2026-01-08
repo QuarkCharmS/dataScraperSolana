@@ -8,7 +8,7 @@ dotenv.config();
 
 const RAYDIUM_LIQUIDITY_POOL_V4_ADDRESS = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
 const WSOL_ADDRESS = "So11111111111111111111111111111111111111112";
-const RPC = "https://mainnet.helius-rpc.com/?api-key=REMOVED_API_KEY";
+const RPC = process.env.RPC_ENDPOINT || "https://api.mainnet-beta.solana.com";
 
 const args: string[] = process.argv.slice(2);
 

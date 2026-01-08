@@ -1,0 +1,23 @@
+# Environment variables
+.env
+
+# Node modules
+node_modules/
+*/node_modules/
+
+# Logs
+logs/
+*.log
+errorNewLpsLogs.txt
+
+# Data files
+data.json
+*.json.bak
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,8 +1,18 @@
 import { gql, GraphQLClient } from "graphql-request";
 import { argv } from "process";
 import { PublicKey } from '@solana/web3.js';
+import dotenv from 'dotenv';
+dotenv.config({ path: '../.env' });
 
-const endpoint = `https://programs.shyft.to/v0/graphql/?api_key=REMOVED_API_KEY`;
+const endpoint = process.env.SHYFT_API_KEY
+  ? `https://programs.shyft.to/v0/graphql/?api_key=${process.env.SHYFT_API_KEY}`
+  : null;
+
+if (!endpoint) {
+  console.error('Error: SHYFT_API_KEY is required. Please set it in your .env file.');
+  console.error('Get your free API key at: https://shyft.to/');
+  process.exit(1);
+}
 
 const graphQLClient = new GraphQLClient(endpoint, {
   method: `POST`,
